@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>מלאי חכם — דמו סורק</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBFAF6;
+    --paper-dim:#F1EEE4;
+    --ink:#1C1C1A;
+    --muted:#8A8578;
+    --line:rgba(28,28,26,0.16);
+    --stamp:#B23A2E;
+    --green:#3F6C51;
+    --green-dim:#e7efe8;
+    --amber:#C98A2B;
+    --amber-dim:#faf1de;
+    --shadow: 0 18px 40px -22px rgba(28,28,26,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#DCD8CC;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(0,0,0,0.05), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(0,0,0,0.05), transparent 40%);
+    min-height:100vh;
+    font-family:'Rubik',sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:28px 14px 60px;
+  }
+  .app{
+    width:100%;
+    max-width:430px;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* ===== Header ===== */
+  .app-header{
+    text-align:center;
+    margin-bottom:18px;
+  }
+  .app-header .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .app-header h1{
+    font-size:26px;
+    font-weight:800;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .app-header .sub{
+    font-size:13px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+
+  /* ===== Receipt card ===== */
+  .receipt{
+    background:var(--paper);
+    box-shadow:var(--shadow);
+    position:relative;
+    padding:0 22px 22px;
+  }
+  .torn-top, .torn-bottom{
+    height:13px;
+    background:
+      linear-gradient(135deg, transparent 50%, var(--paper) 50%),
+      linear-gradient(45deg, var(--paper) 50%, transparent 50%);
+    background-size:16px 16px;
+    background-position:right, right;
+  }
+  .torn-bottom{transform:scaleY(-1);}
+
+  /* ===== Mode toggle ===== */
+  .mode-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:0;
+    margin:14px 0 18px;
+    background:var(--paper-dim);
+    border-radius:999px;
+    padding:4px;
+    border:1px solid var(--line);
+  }
+  .mode-btn{
+    flex:1;
+    text-align:center;
+    padding:10px 6px;
+    border-radius:999px;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    transition:all .2s ease;
+    user-select:none;
+  }
+  .mode-btn.active.in{background:var(--green); color:#fff;}
+  .mode-btn.active.out{background:var(--stamp); color:#fff;}
+
+  /* ===== Scanner ===== */
+  .scanner-wrap{
+    position:relative;
+    border-radius:14px;
+    overflow:hidden;
+    background:#12130f;
+    aspect-ratio:4/3;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  #video{
+    width:100%; height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .scan-frame{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .scan-box{
+    width:78%; height:38%;
+    border-radius:10px;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+    position:relative;
+  }
+  .scan-box::before, .scan-box::after{
+    content:'';
+    position:absolute;
+    width:26px; height:26px;
+    border:3px solid var(--amber);
+  }
+  .scan-box::before{top:-3px; right:-3px; border-left:none; border-bottom:none; border-radius:0 8px 0 0;}
+  .scan-box::after{bottom:-3px; left:-3px; border-right:none; border-top:none; border-radius:0 0 0 8px;}
+  .scan-line{
+    position:absolute; right:-3px; left:-3px;
+    height:2px;
+    background:var(--amber);
+    box-shadow:0 0 10px var(--amber);
+    animation: sweep 1.8s ease-in-out infinite;
+  }
+  @keyframes sweep{
+    0%,100%{top:6%;}
+    50%{top:92%;}
+  }
+  .camera-off{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; color:#cfcabb; text-align:center; padding:20px;
+    font-size:13px;
+  }
+  .camera-off button{
+    margin-top:6px;
+    background:var(--amber);
+    color:#1C1C1A;
+    border:none;
+    font-weight:700;
+    padding:10px 20px;
+    border-radius:999px;
+    font-family:'Rubik';
+    cursor:pointer;
+  }
+
+  .manual-row{
+    display:flex; gap:8px; margin-top:10px;
+  }
+  .manual-row input{
+    flex:1;
+    font-family:'IBM Plex Mono',monospace;
+    border:1px dashed var(--line);
+    background:transparent;
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:14px;
+    color:var(--ink);
+  }
+  .manual-row input:focus{outline:none; border-color:var(--ink);}
+  .manual-row button{
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:8px;
+    padding:0 16px;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  /* ===== Toast line (freshly scanned) ===== */
+  .flash{
+    margin-top:14px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    opacity:0;
+    transform:translateY(-6px);
+  }
+  .flash.show{
+    animation: flashIn .35s ease forwards;
+  }
+  @keyframes flashIn{
+    to{opacity:1; transform:translateY(0);}
+  }
+  .flash .fname{font-weight:700; font-size:14px;}
+  .flash .fqty{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--muted);}
+  .flash.in{background:var(--green-dim); border-color:var(--green);}
+  .flash.out{background:var(--amber-dim); border-color:var(--amber);}
+
+  /* ===== Section titles ===== */
+  .section-title{
+    display:flex; align-items:center; gap:10px;
+    margin:26px 0 10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--muted);
+  }
+  .section-title::after{
+    content:'';
+    flex:1;
+    border-top:1px dashed var(--line);
+  }
+
+  /* ===== Inventory list ===== */
+  .item-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 0;
+    border-bottom:1px dotted var(--line);
+    position:relative;
+  }
+  .item-row:last-child{border-bottom:none;}
+  .item-main{flex:1; min-width:0;}
+  .item-name{font-weight:600; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .item-meta{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px;}
+  .item-qty{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:16px;
+    min-width:34px;
+    text-align:center;
+  }
+  .item-qty.low{color:var(--stamp);}
+  .item-qty.ok{color:var(--green);}
+
+  .stamp{
+    position:absolute;
+    left:0; top:50%;
+    transform:translateY(-50%) rotate(-9deg);
+    border:2px solid var(--stamp);
+    color:var(--stamp);
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:9.5px;
+    letter-spacing:.06em;
+    padding:2px 7px;
+    border-radius:4px;
+    opacity:.9;
+    pointer-events:none;
+  }
+
+  /* ===== Shortage panel ===== */
+  .shortage-empty{
+    font-size:13px;
+    color:var(--muted);
+    text-align:center;
+    padding:18px 0 6px;
+  }
+  .shortage-item{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin-bottom:8px;
+  }
+  .shortage-item .sname{font-weight:700; font-size:13.5px;}
+  .shortage-item .ssupplier{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted);}
+  .order-btn{
+    background:var(--green);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:700;
+    font-family:'Rubik';
+    cursor:pointer;
+    white-space:nowrap;
+  }
+
+  /* ===== New product panel ===== */
+  .newprod{
+    margin-top:14px;
+    border:1.5px dashed var(--ink);
+    border-radius:12px;
+    padding:14px;
+    background:var(--paper-dim);
+  }
+  .newprod .np-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  .newprod .np-code{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+  .newprod label{
+    display:block;
+    font-size:11px;
+    color:var(--muted);
+    margin:8px 0 3px;
+  }
+  .newprod input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 10px;
+    font-family:'Rubik';
+    font-size:14px;
+    background:#fff;
+  }
+  .newprod input:focus{outline:none; border-color:var(--ink);}
+  .np-row{display:flex; gap:8px;}
+  .np-row > div{flex:1;}
+  .newprod .np-save{
+    margin-top:12px;
+    width:100%;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:8px;
+    padding:11px;
+    font-weight:700;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  .foot-note{
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:16px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="app-header">
+    <div class="eyebrow">SMART STOCK · דמו</div>
+    <h1>מלאי חכם</h1>
+    <div class="sub">סרוק מוצר — המערכת סופרת בשבילך</div>
+  </div>
+
+  <div class="receipt">
+    <div class="torn-top"></div>
+
+    <div class="mode-row">
+      <button class="mode-btn active in" id="modeInBtn" onclick="setMode('in')">קליטת סחורה +</button>
+      <button class="mode-btn out" id="modeOutBtn" onclick="setMode('out')">מכירה / בדיקה −</button>
+    </div>
+
+    <div class="scanner-wrap" id="scannerWrap">
+      <video id="video" playsinline muted></video>
+      <div class="scan-frame">
+        <div class="scan-box"><div class="scan-line"></div></div>
+      </div>
+      <div class="camera-off" id="cameraOff" style="display:none;">
+        <span>אין גישה למצלמה כרגע</span>
+        <button onclick="startCamera()">נסה שוב</button>
+      </div>
+    </div>
+
+    <div class="manual-row">
+      <input id="manualInput" class="mono" type="text" inputmode="numeric" placeholder="או הקלד ברקוד ידנית…">
+      <button onclick="handleManual()">סרוק</button>
+    </div>
+
+    <div class="flash" id="flash">
+      <div>
+        <div class="fname" id="flashName"></div>
+        <div class="fqty" id="flashQty"></div>
+      </div>
+      <div id="flashStamp"></div>
+    </div>
+
+    <div id="newProdPanel"></div>
+
+    <div class="section-title">מלאי נוכחי</div>
+    <div id="itemList"></div>
+
+    <div class="section-title">חוסרים לספקים</div>
+    <div id="shortageList"></div>
+
+    <div class="torn-bottom"></div>
+  </div>
+
+  <div class="foot-note">DEMO · הנתונים נשמרים רק בזיכרון המכשיר</div>
+</div>
+
+<script>
+// ===== State =====
+let mode = 'in'; // 'in' = קליטת סחורה, 'out' = מכירה
+let products = {
+  "7290000066317": {name:"חלב תנובה 3% 1 ליטר", qty:8, min:10, supplier:"תנובה"},
+  "7290000000012": {name:"לחם אחיד פרוס", qty:15, min:5, supplier:"מאפיית הבוקר"},
+  "7290000000029": {name:"קוקה קולה 1.5 ליטר", qty:3, min:6, supplier:"ספק משקאות מרכזי"},
+  "7290000000036": {name:"ביצים L תריסר", qty:20, min:8, supplier:"לול טרי"},
+};
+let lastScan = {code:null, time:0};
+let stream = null;
+let detecting = false;
+let barcodeDetector = null;
+
+// ===== Mode toggle =====
+function setMode(m){
+  mode = m;
+  document.getElementById('modeInBtn').classList.toggle('active', m==='in');
+  document.getElementById('modeOutBtn').classList.toggle('active', m==='out');
+}
+
+// ===== Render =====
+function render(){
+  renderList();
+  renderShortages();
+}
+
+function renderList(){
+  const list = document.getElementById('itemList');
+  const entries = Object.entries(products);
+  if(entries.length===0){
+    list.innerHTML = '<div class="shortage-empty">אין מוצרים במלאי עדיין — סרוק כדי להתחיל</div>';
+    return;
+  }
+  list.innerHTML = entries.map(([code,p])=>{
+    const low = p.qty <= p.min;
+    return `<div class="item-row">
+      ${low ? '<div class="stamp">חסר במלאי</div>' : ''}
+      <div class="item-main" style="${low?'padding-right:78px':''}">
+        <div class="item-name">${p.name}</div>
+        <div class="item-meta">${code} · סף מינ׳ ${p.min} · ${p.supplier}</div>
+      </div>
+      <div class="item-qty ${low?'low':'ok'}">${p.qty}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderShortages(){
+  const wrap = document.getElementById('shortageList');
+  const low = Object.entries(products).filter(([c,p])=>p.qty<=p.min);
+  if(low.length===0){
+    wrap.innerHTML = '<div class="shortage-empty">אין כרגע מוצרים מתחת לסף המינימום 🙌</div>';
+    return;
+  }
+  wrap.innerHTML = low.map(([code,p])=>{
+    const msg = encodeURIComponent(`שלום, נגמר/נגמר לי בקרוב "${p.name}" (יש רק ${p.qty} יחידות). אפשר להזמין אספקה?`);
+    return `<div class="shortage-item">
+      <div>
+        <div class="sname">${p.name}</div>
+        <div class="ssupplier">${p.supplier} · נותרו ${p.qty}</div>
+      </div>
+      <a class="order-btn" href="https://wa.me/?text=${msg}" target="_blank" rel="noopener">שלח הזמנה</a>
+    </div>`;
+  }).join('');
+}
+
+// ===== Feedback: beep + vibrate + flash line =====
+function beep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'square';
+    o.frequency.value = mode==='in' ? 880 : 660;
+    g.gain.value = 0.06;
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); ctx.close(); }, 90);
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate(45);
+}
+
+function flashLine(name, qtyText, isLow){
+  const el = document.getElementById('flash');
+  el.className = 'flash show ' + (mode==='in'?'in':'out');
+  document.getElementById('flashName').textContent = name;
+  document.getElementById('flashQty').textContent = qtyText;
+  document.getElementById('flashStamp').innerHTML = isLow ? '<span style="color:var(--stamp);font-family:\'IBM Plex Mono\';font-weight:700;font-size:11px;">חסר!</span>' : '';
+  clearTimeout(window._flashTimer);
+  window._flashTimer = setTimeout(()=>{ el.classList.remove('show'); }, 2200);
+}
+
+// ===== Core scan handling =====
+function processCode(code){
+  const now = Date.now();
+  if(lastScan.code === code && now - lastScan.time < 1400) return; // debounce
+  lastScan = {code, time: now};
+
+  const p = products[code];
+  if(!p){
+    showNewProductPanel(code);
+    beep();
+    return;
+  }
+
+  if(mode==='in'){
+    p.qty += 1;
+  }else{
+    p.qty = Math.max(0, p.qty - 1);
+  }
+  beep();
+  flashLine(p.name, `כעת במלאי: ${p.qty}`, p.qty<=p.min);
+  render();
+}
+
+function handleManual(){
+  const input = document.getElementById('manualInput');
+  const code = input.value.trim();
+  if(!code) return;
+  processCode(code);
+  input.value='';
+}
+document.getElementById('manualInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter') handleManual();
+});
+
+// ===== New product inline form =====
+function showNewProductPanel(code){
+  const panel = document.getElementById('newProdPanel');
+  panel.innerHTML = `
+    <div class="newprod">
+      <div class="np-title">מוצר חדש — לא נמצא במלאי</div>
+      <div class="np-code">ברקוד: ${code}</div>
+      <label>שם המוצר</label>
+      <input id="npName" placeholder="לדוגמה: שוקו תנובה 1 ליטר">
+      <div class="np-row">
+        <div>
+          <label>כמות נכנסת</label>
+          <input id="npQty" type="number" value="1" min="0">
+        </div>
+        <div>
+          <label>סף מינימום להתראה</label>
+          <input id="npMin" type="number" value="5" min="0">
+        </div>
+      </div>
+      <label>ספק</label>
+      <input id="npSupplier" placeholder="לדוגמה: תנובה">
+      <button class="np-save" onclick="saveNewProduct('${code}')">שמור מוצר והוסף למלאי</button>
+    </div>
+  `;
+}
+
+function saveNewProduct(code){
+  const name = document.getElementById('npName').value.trim() || 'מוצר ללא שם';
+  const qty = parseInt(document.getElementById('npQty').value) || 0;
+  const min = parseInt(document.getElementById('npMin').value) || 0;
+  const supplier = document.getElementById('npSupplier').value.trim() || 'ספק לא ידוע';
+  products[code] = {name, qty, min, supplier};
+  document.getElementById('newProdPanel').innerHTML = '';
+  beep();
+  flashLine(name, `נוסף למלאי: ${qty}`, qty<=min);
+  render();
+}
+
+// ===== Camera + BarcodeDetector =====
+async function startCamera(){
+  const video = document.getElementById('video');
+  const off = document.getElementById('cameraOff');
+  off.style.display = 'none';
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    video.srcObject = stream;
+    await video.play();
+    detecting = true;
+
+    if('BarcodeDetector' in window){
+      try{
+        barcodeDetector = new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','qr_code']});
+      }catch(e){
+        barcodeDetector = new BarcodeDetector();
+      }
+      scanLoop();
+    }
+    // if BarcodeDetector isn't supported, manual input below still works fully
+  }catch(err){
+    off.style.display = 'flex';
+  }
+}
+
+async function scanLoop(){
+  const video = document.getElementById('video');
+  if(!detecting) return;
+  if(barcodeDetector && video.readyState === video.HAVE_ENOUGH_DATA){
+    try{
+      const codes = await barcodeDetector.detect(video);
+      if(codes.length>0){
+        processCode(codes[0].rawValue);
+      }
+    }catch(e){}
+  }
+  requestAnimationFrame(scanLoop);
+}
+
+// ===== Init =====
+render();
+startCamera();
+</script>
+</body>
+</html>
